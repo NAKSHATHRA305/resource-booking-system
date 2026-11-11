@@ -116,7 +116,14 @@ table.t{width:100%;border-collapse:collapse}
 <header class="bar">
   <div class="wrap bar-in">
     <span class="mark">Resource Booking</span>
-    <button class="btn" id="newBtn">New booking</button>
+    @if ($isAdmin)
+      <span>
+        <button class="btn" id="newBtn">New booking</button>
+        <form method="post" action="/logout" style="display:inline">@csrf<button class="btn plain" type="submit">Log out</button></form>
+      </span>
+    @else
+      <a class="btn" href="/login" style="text-decoration:none;display:inline-block">Admin login</a>
+    @endif
   </div>
 </header>
 
@@ -143,6 +150,7 @@ table.t{width:100%;border-collapse:collapse}
       <span><i class="sw-closed"></i>Crossed: sales stopped</span>
     </div>
 
+    @if ($isAdmin)
     <details class="stops">
       <summary>Stop or reopen sales</summary>
       <form id="stopForm" class="stop-row">
@@ -159,6 +167,7 @@ table.t{width:100%;border-collapse:collapse}
         <button type="button" class="btn plain" id="reopenBtn">Reopen sales</button>
       </form>
     </details>
+    @endif
   </section>
 
   <section class="cols">
@@ -227,6 +236,7 @@ table.t{width:100%;border-collapse:collapse}
 $.ajaxSetup({ headers: { 'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content') } });
 
 var TODAY = '{{ today()->toDateString() }}';
+var ADMIN = {{ $isAdmin ? 'true' : 'false' }};
 var from = TODAY;
 var WD = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
 var MO = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
@@ -328,7 +338,7 @@ function loadSummary() {
            '<td>' + esc(b.channel) + '</td><td>' + pretty(b.check_in) + ' to ' + pretty(b.check_out) + '</td>' +
            '<td class="num">' + b.units + '</td>' +
            '<td class="' + (cancelled ? 'status-x' : 'status-ok') + '">' + esc(b.status) + '</td>' +
-           '<td class="num">' + (cancelled ? '' : '<button class="link cancel" data-id="' + b.id + '">Cancel</button>') + '</td></tr>';
+           '<td class="num">' + (cancelled || !ADMIN ? '' : '<button class="link cancel" data-id="' + b.id + '">Cancel</button>') + '</td></tr>';
     });
     $('#recent').html(r || '<tr><td colspan="8" class="empty">No bookings yet. Click a cell in the chart to make the first one.</td></tr>');
   });
@@ -373,6 +383,7 @@ $(document).on('keydown', function (e) { if (e.key === 'Escape') closeDrawer(); 
 $('#f-in, #f-out, #f-room').on('change', function () { nights(); loadQuote(); });
 
 $('#grid').on('click', 'td.cell:not(.full)', function () {
+  if (!ADMIN) { toast('Log in as admin to make a booking.'); return; }
   openDrawer($(this).data('room'), $(this).data('date'));
 });
 $('#grid').on('keydown', 'td.cell:not(.full)', function (e) {

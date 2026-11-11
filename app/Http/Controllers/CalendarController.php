@@ -13,7 +13,7 @@ class CalendarController extends Controller
     public function index()
     {
         $roomTypes = DB::table('room_types')->orderBy('id')->get();
-        return view('app', compact('roomTypes'));
+        return view('app', ['roomTypes' => $roomTypes, 'isAdmin' => (bool) session('is_admin', false)]);
     }
 
     public function availability(Request $r)

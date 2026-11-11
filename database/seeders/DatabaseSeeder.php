@@ -15,10 +15,11 @@ class DatabaseSeeder extends Seeder
             ['name' => 'sim-ota', 'api_key' => 'test-key-123', 'created_at' => now(), 'updated_at' => now()],
         ]);
 
-        foreach ([['Single Room', 5], ['Double Room', 8], ['Suite', 2]] as [$name, $units]) {
+        foreach ([['Single Room', 5, 8000], ['Double Room', 8, 12000], ['Suite', 2, 25000]] as [$name, $units, $rate]) {
             $id = DB::table('room_types')->insertGetId([
                 'name'          => $name,
                 'default_units' => $units,
+                'base_rate'     => $rate,
                 'created_at'    => now(),
                 'updated_at'    => now(),
             ]);

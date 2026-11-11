@@ -27,6 +27,7 @@ button{font-family:inherit}
 .btn:hover{background:var(--indigo-d)}
 .btn.plain{background:transparent;color:var(--ink);border:1px solid var(--rule);font-weight:500;padding:7px 14px}
 .btn.plain:hover{border-color:var(--ink)}
+.link{background:none;border:0;color:var(--indigo);font:inherit;font-weight:700;cursor:pointer;padding:0;text-decoration:underline}
 
 .lede{padding:48px 0 32px}
 .lede h1{margin:0;font-size:clamp(38px,6.4vw,72px);line-height:1.02;font-weight:900;letter-spacing:-.03em}
@@ -50,11 +51,20 @@ td.cell.mon{border-left:2px solid var(--ink)}
 td.cell:hover:not(.full){outline:2px solid var(--ink);outline-offset:-2px}
 td.full{cursor:not-allowed;color:var(--mute);font-weight:500;
   background:repeating-linear-gradient(135deg,#D3D7DE 0 1px,transparent 1px 6px),#EDEFF3}
+td.closed{color:var(--ink);font-weight:700;
+  background:repeating-linear-gradient(45deg,#B9BFCC 0 2px,transparent 2px 6px),#F5F6F8}
 #peek{margin-top:10px;min-height:22px;font-size:14px}
 .legend{display:flex;gap:22px;flex-wrap:wrap;margin-top:8px;font-size:13px;color:var(--mute);align-items:center}
 .legend i{display:inline-block;width:26px;height:12px;border-radius:2px;vertical-align:-2px;margin-right:7px}
 .sw-free{background:rgba(43,63,166,.12)} .sw-busy{background:rgba(43,63,166,.72)}
 .sw-full{background:repeating-linear-gradient(135deg,#D3D7DE 0 1px,transparent 1px 6px),#EDEFF3}
+.sw-closed{background:repeating-linear-gradient(45deg,#B9BFCC 0 2px,transparent 2px 6px),#F5F6F8;border:1px solid var(--rule)}
+
+details.stops{margin-top:16px;border-top:1px solid var(--rule);padding-top:12px}
+details.stops summary{cursor:pointer;font-weight:700}
+.stop-row{display:flex;gap:10px;flex-wrap:wrap;align-items:end;margin-top:12px}
+.stop-row label{display:flex;flex-direction:column;font-size:13px;font-weight:700;gap:6px}
+.stop-row select,.stop-row input{padding:9px 10px;border:1px solid var(--rule);border-radius:3px;font:inherit;font-weight:400;background:#fff;color:var(--ink)}
 
 .cols{display:grid;grid-template-columns:1.25fr 1fr;gap:64px;margin-bottom:56px}
 h2{margin:0 0 4px;font-size:20px;font-weight:900;letter-spacing:-.01em}
@@ -71,6 +81,7 @@ table.t{width:100%;border-collapse:collapse}
 .ledger{margin-bottom:90px}
 .ledger .t td:first-child{color:var(--mute)}
 .status-ok{color:var(--mute)}
+.status-x{color:var(--err)}
 
 #overlay{position:fixed;inset:0;background:rgba(23,26,33,.4);opacity:0;pointer-events:none;transition:opacity .2s;z-index:20}
 #overlay.open{opacity:1;pointer-events:auto}
@@ -83,6 +94,7 @@ table.t{width:100%;border-collapse:collapse}
 #drawer input:focus,#drawer select:focus{outline:2px solid var(--indigo);border-color:var(--indigo)}
 .row2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
 #nights{margin-top:10px;font-size:14px;font-weight:700;color:var(--indigo);min-height:21px}
+#quote{font-size:14px;font-weight:700;min-height:21px}
 #f-err{color:var(--err);font-size:14px;font-weight:700;min-height:22px;margin-top:10px}
 .actions{display:flex;gap:10px;margin-top:16px}
 .actions .btn{flex:1}
@@ -128,7 +140,25 @@ table.t{width:100%;border-collapse:collapse}
       <span><i class="sw-free"></i>Lighter: more rooms free</span>
       <span><i class="sw-busy"></i>Darker: nearly full</span>
       <span><i class="sw-full"></i>Hatched: sold out</span>
+      <span><i class="sw-closed"></i>Crossed: sales stopped</span>
     </div>
+
+    <details class="stops">
+      <summary>Stop or reopen sales</summary>
+      <form id="stopForm" class="stop-row">
+        <label>Room type
+          <select name="room_type_id">
+            @foreach ($roomTypes as $rt)
+              <option value="{{ $rt->id }}">{{ $rt->name }}</option>
+            @endforeach
+          </select>
+        </label>
+        <label>From <input type="date" name="from" required></label>
+        <label>To <input type="date" name="to" required></label>
+        <button type="submit" class="btn">Stop sales</button>
+        <button type="button" class="btn plain" id="reopenBtn">Reopen sales</button>
+      </form>
+    </details>
   </section>
 
   <section class="cols">
@@ -155,7 +185,7 @@ table.t{width:100%;border-collapse:collapse}
     <p class="sub">The eight most recent, newest first.</p>
     <div style="overflow-x:auto">
     <table class="t">
-      <thead><tr><th>No.</th><th>Guest</th><th>Room</th><th>Channel</th><th>Stay</th><th class="num">Rooms</th><th>Status</th></tr></thead>
+      <thead><tr><th>No.</th><th>Guest</th><th>Room</th><th>Channel</th><th>Stay</th><th class="num">Rooms</th><th>Status</th><th></th></tr></thead>
       <tbody id="recent"></tbody>
     </table>
     </div>
@@ -180,6 +210,7 @@ table.t{width:100%;border-collapse:collapse}
       <div><label for="f-out">Check-out</label><input id="f-out" type="date" name="check_out" required></div>
     </div>
     <div id="nights"></div>
+    <div id="quote"></div>
     <label for="f-units">Rooms</label>
     <input id="f-units" type="number" name="units" value="1" min="1" max="10">
     <div id="f-err" role="alert"></div>
@@ -205,11 +236,17 @@ function esc(s) { return $('<div>').text(s == null ? '' : s).html(); }
 function dt(str) { return new Date(str + 'T00:00:00Z'); }
 function shift(str, n) { var x = dt(str); x.setUTCDate(x.getUTCDate() + n); return x.toISOString().slice(0, 10); }
 function pretty(str) { var x = dt(str); return x.getUTCDate() + ' ' + MO[x.getUTCMonth()]; }
+function yen(n) { return '¥' + Number(n).toLocaleString('en-US'); }
 
 function toast(msg) {
   var t = $('#toast').text(msg).addClass('show');
   clearTimeout(window._t);
-  window._t = setTimeout(function () { t.removeClass('show'); }, 3000);
+  window._t = setTimeout(function () { t.removeClass('show'); }, 3200);
+}
+function errMsg(xhr, fallback) {
+  var j = xhr.responseJSON || {}, m = j.message || fallback;
+  if (j.errors) { m = Object.values(j.errors)[0][0]; }
+  return m;
 }
 
 function loadGrid() {
@@ -236,9 +273,14 @@ function loadGrid() {
       h += '<tr><th class="rm">' + esc(rooms[id].name) + '</th>';
       rooms[id].cells.forEach(function (c) {
         var rem = +c.remaining, tot = +c.total, occ = tot ? (tot - rem) / tot : 1;
+        var closed = +c.closed === 1;
         var mon = dt(c.date).getUTCDay() === 1 ? ' mon' : '';
-        var attrs = ' data-room="' + id + '" data-name="' + esc(rooms[id].name) + '" data-date="' + c.date + '" data-rem="' + rem + '" data-tot="' + tot + '"';
-        if (rem === 0) {
+        var attrs = ' data-room="' + id + '" data-name="' + esc(rooms[id].name) + '" data-date="' + c.date +
+                    '" data-rem="' + rem + '" data-tot="' + tot + '" data-closed="' + (closed ? 1 : 0) +
+                    '" data-price="' + Math.round(+c.price || 0) + '"';
+        if (closed) {
+          h += '<td class="cell full closed' + mon + '"' + attrs + '>×</td>';
+        } else if (rem === 0) {
           h += '<td class="cell full' + mon + '"' + attrs + '>0</td>';
         } else {
           var a = (0.10 + 0.62 * occ).toFixed(2);
@@ -281,17 +323,30 @@ function loadSummary() {
 
     var r = '';
     s.recent.forEach(function (b) {
+      var cancelled = b.status === 'cancelled';
       r += '<tr><td>' + b.id + '</td><td>' + esc(b.guest_name) + '</td><td>' + esc(b.room) + '</td>' +
            '<td>' + esc(b.channel) + '</td><td>' + pretty(b.check_in) + ' to ' + pretty(b.check_out) + '</td>' +
-           '<td class="num">' + b.units + '</td><td class="status-ok">' + esc(b.status) + '</td></tr>';
+           '<td class="num">' + b.units + '</td>' +
+           '<td class="' + (cancelled ? 'status-x' : 'status-ok') + '">' + esc(b.status) + '</td>' +
+           '<td class="num">' + (cancelled ? '' : '<button class="link cancel" data-id="' + b.id + '">Cancel</button>') + '</td></tr>';
     });
-    $('#recent').html(r || '<tr><td colspan="7" class="empty">No bookings yet. Click a cell in the chart to make the first one.</td></tr>');
+    $('#recent').html(r || '<tr><td colspan="8" class="empty">No bookings yet. Click a cell in the chart to make the first one.</td></tr>');
   });
 }
 
 function nights() {
   var n = Math.round((dt($('#f-out').val()) - dt($('#f-in').val())) / 86400000);
   $('#nights').text(isNaN(n) ? '' : (n > 0 ? n + (n > 1 ? ' nights' : ' night') : 'Check-out must be after check-in.'));
+}
+
+function loadQuote() {
+  var room = $('#f-room').val(), ci = $('#f-in').val(), co = $('#f-out').val();
+  if (!ci || !co || co <= ci) { $('#quote').text(''); return; }
+  $.getJSON('/quote', { room_type_id: room, check_in: ci, check_out: co })
+    .done(function (q) {
+      $('#quote').text(q.nights ? 'Suggested rate: ' + yen(q.total) + ' for ' + q.nights + (q.nights > 1 ? ' nights' : ' night') + '.' : '');
+    })
+    .fail(function () { $('#quote').text(''); });
 }
 
 function openDrawer(room, date) {
@@ -303,6 +358,7 @@ function openDrawer(room, date) {
   $('#f-units').val(1);
   $('#f-err').text('');
   nights();
+  loadQuote();
   $('#overlay, #drawer').addClass('open');
   setTimeout(function () { $('#f-guest').focus(); }, 230);
 }
@@ -314,7 +370,7 @@ $('#todayBtn').click(function () { from = TODAY; loadGrid(); });
 $('#newBtn').click(function () { openDrawer(); });
 $('#cancelBtn, #overlay').click(closeDrawer);
 $(document).on('keydown', function (e) { if (e.key === 'Escape') closeDrawer(); });
-$('#f-in, #f-out').on('change', nights);
+$('#f-in, #f-out, #f-room').on('change', function () { nights(); loadQuote(); });
 
 $('#grid').on('click', 'td.cell:not(.full)', function () {
   openDrawer($(this).data('room'), $(this).data('date'));
@@ -323,9 +379,11 @@ $('#grid').on('keydown', 'td.cell:not(.full)', function (e) {
   if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); $(this).click(); }
 });
 $('#grid').on('mouseover focusin', 'td.cell', function () {
-  var d = $(this).data();
-  $('#peek').text(d.name + ', ' + pretty(d.date) + ': ' +
-    (d.rem === 0 ? 'sold out.' : d.rem + ' of ' + d.tot + ' left.'));
+  var d = $(this).data(), t;
+  if (+d.closed === 1) t = 'sales stopped.';
+  else if (+d.rem === 0) t = 'sold out.';
+  else t = d.rem + ' of ' + d.tot + ' left. Suggested rate ' + yen(d.price) + ' per night.';
+  $('#peek').text(d.name + ', ' + pretty(d.date) + ': ' + t);
 });
 $('#grid').on('mouseleave', function () { $('#peek').text(DEFAULT_PEEK); });
 
@@ -339,11 +397,28 @@ $('#bookForm').on('submit', function (e) {
       loadGrid(); loadSummary();
     })
     .fail(function (xhr) {
-      var j = xhr.responseJSON || {}, m = j.message || 'The booking could not be saved. Try again.';
-      if (j.errors) { m = Object.values(j.errors)[0][0]; }
-      $('#f-err').text(m);
+      $('#f-err').text(errMsg(xhr, 'The booking could not be saved. Try again.'));
     });
 });
+
+$('#recent').on('click', '.cancel', function () {
+  var id = $(this).data('id');
+  if (!confirm('Cancel booking ' + id + '? The rooms go back into inventory.')) return;
+  $.post('/bookings/' + id + '/cancel')
+    .done(function () { toast('Booking ' + id + ' cancelled'); loadGrid(); loadSummary(); })
+    .fail(function (xhr) { toast(errMsg(xhr, 'Could not cancel the booking.')); });
+});
+
+function sendStop(closed) {
+  $.post('/stop-sales', $('#stopForm').serialize() + '&closed=' + closed)
+    .done(function (r) {
+      toast((closed ? 'Sales stopped' : 'Sales reopened') + ' on ' + r.nights + (r.nights === 1 ? ' night' : ' nights'));
+      loadGrid(); loadSummary();
+    })
+    .fail(function (xhr) { toast(errMsg(xhr, 'Could not update sales.')); });
+}
+$('#stopForm').on('submit', function (e) { e.preventDefault(); sendStop(1); });
+$('#reopenBtn').click(function () { sendStop(0); });
 
 loadGrid();
 loadSummary();

@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Services\BookingService;
+use App\Services\PricingService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
@@ -21,8 +22,9 @@ class CalendarController extends Controller
         $to = $from->copy()->addDays(14);
 
         $rows = DB::select(
-            'SELECT rt.id AS room_type_id, rt.name, i.date, i.total, i.booked,
-                    (i.total - i.booked) AS remaining
+            'SELECT rt.id AS room_type_id, rt.name, i.date, i.total, i.booked, i.closed,
+                    (i.total - i.booked) AS remaining,
+                    ' . PricingService::expr() . ' AS price
              FROM inventory i
              JOIN room_types rt ON rt.id = i.room_type_id
              WHERE i.date >= ? AND i.date < ?
@@ -33,6 +35,28 @@ class CalendarController extends Controller
         return response()->json(['from' => $from->toDateString(), 'rows' => $rows]);
     }
 
+    public function quote(Request $r)
+    {
+        $d = $r->validate([
+            'room_type_id' => 'required|exists:room_types,id',
+            'check_in'     => 'required|date',
+            'check_out'    => 'required|date|after:check_in',
+        ]);
+
+        $rows = DB::select(
+            'SELECT i.date, ' . PricingService::expr() . ' AS price
+             FROM inventory i
+             JOIN room_types rt ON rt.id = i.room_type_id
+             WHERE i.room_type_id = ? AND i.date >= ? AND i.date < ?
+             ORDER BY i.date',
+            [$d['room_type_id'], $d['check_in'], $d['check_out']]
+        );
+
+        $total = array_sum(array_map(fn ($x) => (float) $x->price, $rows));
+
+        return response()->json(['nights' => count($rows), 'total' => $total, 'rows' => $rows]);
+    }
+
     public function summary()
     {
         $today = today()->toDateString();
@@ -40,7 +64,7 @@ class CalendarController extends Controller
 
         $stats = [
             'bookings'   => (int) DB::selectOne("SELECT COUNT(*) AS v FROM bookings WHERE status = 'confirmed'")->v,
-            'free_today' => (int) DB::selectOne('SELECT COALESCE(SUM(total - booked), 0) AS v FROM inventory WHERE date = ?', [$today])->v,
+            'free_today' => (int) DB::selectOne('SELECT COALESCE(SUM(total - booked), 0) AS v FROM inventory WHERE date = ? AND closed = 0', [$today])->v,
             'occupancy'  => (float) DB::selectOne(
                 'SELECT COALESCE(ROUND(100 * SUM(booked) / NULLIF(SUM(total), 0), 1), 0) AS v
                  FROM inventory WHERE date >= ? AND date < ?', [$today, $end])->v,
@@ -97,5 +121,34 @@ class CalendarController extends Controller
         }
 
         return response()->json(['id' => $booking->id]);
+    }
+
+    public function cancel(int $id, BookingService $svc)
+    {
+        try {
+            $b = $svc->cancel($id);
+        } catch (\DomainException $e) {
+            return response()->json(['message' => $e->getMessage()], 422);
+        }
+
+        return response()->json(['id' => $b->id, 'status' => $b->status]);
+    }
+
+    public function stopSales(Request $r)
+    {
+        $d = $r->validate([
+            'room_type_id' => 'required|exists:room_types,id',
+            'from'         => 'required|date|after_or_equal:today',
+            'to'           => 'required|date|after_or_equal:from',
+            'closed'       => 'required|boolean',
+        ]);
+
+        $n = DB::update(
+            'UPDATE inventory SET closed = ?
+             WHERE room_type_id = ? AND date >= ? AND date <= ?',
+            [$d['closed'] ? 1 : 0, $d['room_type_id'], $d['from'], $d['to']]
+        );
+
+        return response()->json(['nights' => $n]);
     }
 }

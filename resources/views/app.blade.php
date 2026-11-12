@@ -108,6 +108,26 @@ table.t{width:100%;border-collapse:collapse}
   .hint{margin-left:0;width:100%}
 }
 @media (prefers-reduced-motion:reduce){*{transition:none!important}}
+html{-webkit-text-size-adjust:100%}
+@media (max-width:640px){
+  .wrap{padding:0 14px}
+  .bar-in{height:auto;padding:10px 0;flex-wrap:wrap;gap:8px}
+  .lede{padding:24px 0 20px}
+  .lede h1{font-size:clamp(30px,9vw,42px)}
+  .lede p{font-size:16px}
+  .tools .hint{display:none}
+  #range{margin-left:0;width:100%}
+  td.cell{min-width:42px;padding:15px 0;font-size:16px}
+  .grid th.rm{min-width:84px;font-size:13px}
+  .legend{gap:10px 16px}
+  .stop-row{flex-direction:column;align-items:stretch}
+  .stop-row select,.stop-row input,.stop-row .btn{width:100%;font-size:16px}
+  #drawer{width:100%;padding:22px 18px}
+  #drawer input,#drawer select{font-size:16px}
+  .t td,.t th{padding-right:8px}
+  .meter{display:none}
+  .btn{padding:12px 16px}
+}
 </style>
 <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
 </head>

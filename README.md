@@ -7,7 +7,7 @@ Built with PHP, Laravel and MySQL. Deployed on AWS EC2.
 **Live demo:** http://3.107.54.143 (AWS free-plan server, plain HTTP, may be offline later)
 Viewing is open. Booking, cancelling and stopping sales need the admin login.
  
-![Availability grid](docs/screenshots/live-grid.png)
+![Availability grid]("C:\Users\naksh\OneDrive\Pictures\Screenshots\Screenshot 2026-11-12 175105.png")
  
 ## The problem
  
@@ -30,7 +30,7 @@ This project keeps one inventory in MySQL. Every booking goes through one servic
  
 | Sales stopped on a room type | Second booking rejected |
 |---|---|
-| ![Stopped sales](docs/screenshots/live-grid.png) | ![Sold out error](docs/screenshots/sold-out-error.png) |
+| ![Stopped sales]("C:\Users\naksh\OneDrive\Pictures\Screenshots\Screenshot 2026-11-12 175856.png") | ![Sold out error]("C:\Users\naksh\OneDrive\Pictures\Screenshots\Screenshot 2026-11-12 180215.png") |
  
 ## How double booking is prevented
  
@@ -69,7 +69,7 @@ Result:
  
 `unsafe` adds a short delay between the check and the write to make the gap easy to hit. The `safe` result was also run on the AWS server.
  
-![Race test](docs/screenshots/race-test.png)
+![Race test]("C:\Users\naksh\OneDrive\Pictures\Screenshots\Screenshot 2026-11-12 175042.png")
  
 ## Channel API
  
@@ -245,7 +245,4 @@ Secrets (`.env`, database password, admin password) stay on the server and are n
  
 HTTPS with a domain, per-user accounts, PHPUnit tests for the booking service, and a simple refresh so API bookings appear without a reload.
  
-## About
- 
-Built by Nakshathra Chimmu Sasi Nair as a portfolio project. Built on [Laravel](https://laravel.com), which is open-source software under the [MIT license](https://opensource.org/licenses/MIT).
  

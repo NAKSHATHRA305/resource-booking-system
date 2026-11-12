@@ -6,8 +6,7 @@ Built with PHP, Laravel and MySQL. Deployed on AWS EC2.
  
 **Live demo:** http://3.107.54.143 (AWS free-plan server, plain HTTP, may be offline later)
 Viewing is open. Booking, cancelling and stopping sales need the admin login.
- 
-![Availability grid]![Screenshot](Screenshot%202026-11-12%20175105.png)
+
 ## The problem
  
 A hotel sells the same rooms on several booking sites. When one room is left and two requests arrive at the same moment, both can read "1 left", both pass the check, and the room is sold twice.
@@ -25,11 +24,6 @@ This project keeps one inventory in MySQL. Every booking goes through one servic
 - **Stats from plain SQL.** Rooms free tonight, confirmed bookings, 30-day occupancy, bookings by channel, latest bookings.
 - **Admin login.** One admin password from `.env`. Visitors can view, only the admin can change data.
 - **Booking log.** Every status change is written to `booking_logs`.
-## Screenshots
- 
-| Sales stopped on a room type | Second booking rejected |
-|---|---|
-| ![Stopped sales]("C:\Users\naksh\OneDrive\Pictures\Screenshots\Screenshot 2026-11-12 175856.png") | ![Sold out error]("C:\Users\naksh\OneDrive\Pictures\Screenshots\Screenshot 2026-11-12 180215.png") |
  
 ## How double booking is prevented
  
@@ -67,8 +61,6 @@ Result:
 | safe (`FOR UPDATE`) | 10 | 1 |
  
 `unsafe` adds a short delay between the check and the write to make the gap easy to hit. The `safe` result was also run on the AWS server.
- 
-![Race test]("C:\Users\naksh\OneDrive\Pictures\Screenshots\Screenshot 2026-11-12 175042.png")
  
 ## Channel API
  

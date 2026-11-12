@@ -7,8 +7,7 @@ Built with PHP, Laravel and MySQL. Deployed on AWS EC2.
 **Live demo:** http://3.107.54.143 (AWS free-plan server, plain HTTP, may be offline later)
 Viewing is open. Booking, cancelling and stopping sales need the admin login.
  
-![Availability grid]("C:\Users\naksh\OneDrive\Pictures\Screenshots\Screenshot 2026-11-12 175105.png")
- 
+![Availability grid]![Screenshot](Screenshot%202026-11-12%20175105.png)
 ## The problem
  
 A hotel sells the same rooms on several booking sites. When one room is left and two requests arrive at the same moment, both can read "1 left", both pass the check, and the room is sold twice.
